@@ -10,8 +10,17 @@ def save_memory(name, goal):
         }
     with open(Memory_File,"w")as f :
         json.dump(data, f, indent=4)
+
+        
 def load_memory():
-    if not Memory_File.exists():
+    try :
+        if not Memory_File.exists():
+            return None
+        with open(Memory_File, "r" ) as f :
+            return json.load(f)
+    except json.JSONDecodeError:
         return None
-    with open(Memory_File, "r" ) as f :
-        return json.load(f)
+    
+def reset_memory():
+    if Memory_File.exists():
+        Memory_File.unlink()
