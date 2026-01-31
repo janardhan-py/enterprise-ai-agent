@@ -6,3 +6,6 @@ Learning-by-building AI system step by step.
 - Persistent memory using JSON
 - Update & reset memory
 - Basic application logging
+## Intelligence Layer
+- Rule-based goal analysis
+- Context-aware advice generation            
