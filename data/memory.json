@@ -1,4 +1,11 @@
 {
-    "name": "john",
-    "goal": "germany"
+    "name": "John",
+    "goal": "language learning",
+    "tasks": [
+        {
+            "task": "Break your tasks into smaller weekly goals",
+            "status": "todo",
+            "priority": "medium"
+        }
+    ]
 }

@@ -24,3 +24,13 @@ def load_memory():
 def reset_memory():
     if Memory_File.exists():
         Memory_File.unlink()
+
+def save_full_state(name, goal, tasks):
+    data = {
+        "name" : name,
+        "goal" : goal,
+        "tasks" : tasks
+    }
+    Memory_File.parent.mkdir(exist_ok = True)
+    with open(Memory_File,"w") as f:
+        json.dump(data, f , indent = 4)
