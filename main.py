@@ -5,9 +5,17 @@ from core.user_input import get_user_details, ask_user_choice
 from core.memory import load_memory, save_full_state, reset_memory
 from core.rules import analyze_goal
 from core.planner import generate_tasks
-from core.task_manager import initialize_tasks,  display_tasks  , mark_task_done, get_next_task, update_task_priority, execute_task
-  
+from core.task_manager import (
+    initialize_tasks,
+    display_tasks,
+    mark_task_done,
+    get_next_task,
+    update_task_priority,
+    execute_task,
+)
 
+
+MAX_EXECUTIONS_PER_RUN = 2
 
 
 def main():
@@ -29,12 +37,12 @@ def main():
         print("\n📌 Current Goal:")
         print(active_goal)
 
-        # ----- Intelligence Layer -----
+        # ---------- Intelligence ----------
         advice = analyze_goal(active_goal)
         print("\n💡 Advice:")
         print(advice)
 
-        # ----- Task Planning Layer -----
+        # ---------- Task Planning ----------
         if not tasks:
             raw_tasks = generate_tasks(active_goal)
             tasks = initialize_tasks(raw_tasks)
@@ -42,7 +50,7 @@ def main():
 
         display_tasks(tasks)
 
-        # ----- Agent Decision -----
+        # ---------- Agent Decision ----------
         next_task = get_next_task(tasks)
         if next_task:
             print("\n➡️ Next Best Task:")
@@ -50,30 +58,7 @@ def main():
         else:
             print("\n🎉 All tasks are completed!")
 
-        # ----- Mark Task Done -----
-        done_choice = input(
-            "\nEnter task number to mark DONE (or press Enter to skip): "
-        ).strip()
-
-        if done_choice.isdigit():
-            mark_task_done(tasks, int(done_choice) - 1)
-            save_full_state(name, active_goal, tasks)
-            print("✅ Task marked as DONE")
-
-        execute_choice = input(
-            "\n Execute next task now? (y/n)"
-        ).strip().lower()
-
-        if execute_choice == "y" and next_task:
-            success =execute_task(tasks, next_task)
-
-            if success:
-                save_full_state(name, active_goal, tasks)
-                print("⚙️ Task executed and marked as DONE")
-            else:
-                print("❌ Failed to execute task")
-
-        # ----- Update Task Priority -----
+        # ---------- Update Task Priority ----------
         priority_choice = input(
             "\nEnter task number to change PRIORITY (or press Enter to skip): "
         ).strip()
@@ -88,7 +73,37 @@ def main():
             save_full_state(name, active_goal, tasks)
             print("✅ Task priority updated")
 
-        # ----- User Control -----
+        # ---------- Mark Task Done ----------
+        done_choice = input(
+            "\nEnter task number to mark DONE (or press Enter to skip): "
+        ).strip()
+
+        if done_choice.isdigit():
+            mark_task_done(tasks, int(done_choice) - 1)
+            save_full_state(name, active_goal, tasks)
+            print("✅ Task marked as DONE")
+
+        # ---------- Execution Guardrails ----------
+        executed_count = sum(1 for t in tasks if t["status"] == "done")
+
+        if executed_count >= MAX_EXECUTIONS_PER_RUN:
+            print("\n🛑 Execution limit reached for this run.")
+            print("Restart the app to continue.")
+        else:
+            execute_choice = input(
+                "\nExecute next task now? (y/n): "
+            ).strip().lower()
+
+            if execute_choice == "y" and next_task:
+                success = execute_task(tasks, next_task)
+
+                if success:
+                    save_full_state(name, active_goal, tasks)
+                    print("⚙️ Task executed and marked as DONE")
+                else:
+                    print("❌ Failed to execute task")
+
+        # ---------- User Control ----------
         choice = ask_user_choice()
 
         if choice == "2":
