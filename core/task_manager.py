@@ -49,3 +49,10 @@ def update_task_priority(tasks, index, priority):
     if 0 <= index < len(tasks):
         if priority in ["high", "medium", "low"]:
             tasks[index]["priority"] = priority
+
+def execute_task(tasks, task):
+    for t in tasks:
+        if t == task:
+            t['status']= "done"
+            return  True
+    return False

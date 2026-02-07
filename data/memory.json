@@ -4,13 +4,13 @@
     "tasks": [
         {
             "task": "Learn python fundamentals",
-            "status": "todo",
+            "status": "done",
             "priority": "high"
         },
         {
             "task": "Study basic machine learining concepts",
-            "status": "todo",
-            "priority": "medium"
+            "status": "done",
+            "priority": "high"
         },
         {
             "task": "Build small AI related projects",

@@ -5,7 +5,7 @@ from core.user_input import get_user_details, ask_user_choice
 from core.memory import load_memory, save_full_state, reset_memory
 from core.rules import analyze_goal
 from core.planner import generate_tasks
-from core.task_manager import initialize_tasks,  display_tasks  , mark_task_done, get_next_task, update_task_priority
+from core.task_manager import initialize_tasks,  display_tasks  , mark_task_done, get_next_task, update_task_priority, execute_task
   
 
 
@@ -59,6 +59,19 @@ def main():
             mark_task_done(tasks, int(done_choice) - 1)
             save_full_state(name, active_goal, tasks)
             print("✅ Task marked as DONE")
+
+        execute_choice = input(
+            "\n Execute next task now? (y/n)"
+        ).strip().lower()
+
+        if execute_choice == "y" and next_task:
+            success =execute_task(tasks, next_task)
+
+            if success:
+                save_full_state(name, active_goal, tasks)
+                print("⚙️ Task executed and marked as DONE")
+            else:
+                print("❌ Failed to execute task")
 
         # ----- Update Task Priority -----
         priority_choice = input(
