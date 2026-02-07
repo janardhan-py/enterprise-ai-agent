@@ -5,7 +5,9 @@ from core.user_input import get_user_details, ask_user_choice
 from core.memory import load_memory, save_full_state, reset_memory
 from core.rules import analyze_goal
 from core.planner import generate_tasks
-from core.task_manager import initialize_tasks, display_tasks, mark_task_done
+from core.task_manager import initialize_tasks,  display_tasks  , mark_task_done, get_next_task, update_task_priority
+  
+
 
 
 def main():
@@ -27,12 +29,12 @@ def main():
         print("\n📌 Current Goal:")
         print(active_goal)
 
-        # Intelligence layer
+        # ----- Intelligence Layer -----
         advice = analyze_goal(active_goal)
         print("\n💡 Advice:")
         print(advice)
 
-        # Planning / Task layer
+        # ----- Task Planning Layer -----
         if not tasks:
             raw_tasks = generate_tasks(active_goal)
             tasks = initialize_tasks(raw_tasks)
@@ -40,17 +42,40 @@ def main():
 
         display_tasks(tasks)
 
-        # Task update loop
-        task_choice = input(
+        # ----- Agent Decision -----
+        next_task = get_next_task(tasks)
+        if next_task:
+            print("\n➡️ Next Best Task:")
+            print(f"- {next_task['task']} (priority: {next_task['priority']})")
+        else:
+            print("\n🎉 All tasks are completed!")
+
+        # ----- Mark Task Done -----
+        done_choice = input(
             "\nEnter task number to mark DONE (or press Enter to skip): "
         ).strip()
 
-        if task_choice.isdigit():
-            mark_task_done(tasks, int(task_choice) - 1)
+        if done_choice.isdigit():
+            mark_task_done(tasks, int(done_choice) - 1)
             save_full_state(name, active_goal, tasks)
             print("✅ Task marked as DONE")
 
-        # User control options
+        # ----- Update Task Priority -----
+        priority_choice = input(
+            "\nEnter task number to change PRIORITY (or press Enter to skip): "
+        ).strip()
+
+        if priority_choice.isdigit():
+            task_index = int(priority_choice) - 1
+            new_priority = input(
+                "Set priority (high / medium / low): "
+            ).strip().lower()
+
+            update_task_priority(tasks, task_index, new_priority)
+            save_full_state(name, active_goal, tasks)
+            print("✅ Task priority updated")
+
+        # ----- User Control -----
         choice = ask_user_choice()
 
         if choice == "2":
@@ -68,7 +93,7 @@ def main():
             print("🗑️ Memory reset successfully")
 
         else:
-            logging.info("User kept existing state")
+            logging.info("User kept existing plan")
             print("➡️ Continuing with current plan")
 
     # =========================
@@ -93,6 +118,11 @@ def main():
         print(advice)
 
         display_tasks(tasks)
+
+        next_task = get_next_task(tasks)
+        if next_task:
+            print("\n➡️ Next Best Task:")
+            print(f"- {next_task['task']} (priority: {next_task['priority']})")
 
 
 if __name__ == "__main__":

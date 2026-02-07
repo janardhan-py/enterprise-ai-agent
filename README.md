@@ -14,3 +14,8 @@ Learning-by-building AI system step by step.
 ## Planning Layer
 - Converts user goals into actionable task plans
 - Rule-based task decomposition
+
+## Task Management
+- Tasks stored with status and priority
+- Progress tracked across sessions
+

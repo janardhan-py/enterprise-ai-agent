@@ -1,9 +1,24 @@
 {
-    "name": "John",
-    "goal": "language learning",
+    "name": "john",
+    "goal": "ai",
     "tasks": [
         {
-            "task": "Break your tasks into smaller weekly goals",
+            "task": "Learn python fundamentals",
+            "status": "todo",
+            "priority": "high"
+        },
+        {
+            "task": "Study basic machine learining concepts",
+            "status": "todo",
+            "priority": "medium"
+        },
+        {
+            "task": "Build small AI related projects",
+            "status": "todo",
+            "priority": "high"
+        },
+        {
+            "task": "Create a github porfolio",
             "status": "todo",
             "priority": "medium"
         }
