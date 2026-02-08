@@ -19,3 +19,13 @@ Learning-by-building AI system step by step.
 - Tasks stored with status and priority
 - Progress tracked across sessions
 
+
+## Agent Execution
+- Agent can execute tasks and update state
+- Full observe–decide–act loop implemented
+
+## Safety & Guardrails
+- Execution limits per run
+- Prevents infinite agent loops
+- Human-in-the-loop control
+

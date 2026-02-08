@@ -12,3 +12,4 @@ def analyze_goal(goal: str) -> str:
         return "Build real projects, maintain GitHub, and practice interviews."
 
     return "Break your goal into smaller tasks and work consistently."
+

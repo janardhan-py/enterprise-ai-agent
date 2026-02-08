@@ -5,6 +5,7 @@ from core.user_input import get_user_details, ask_user_choice
 from core.memory import load_memory, save_full_state, reset_memory
 from core.rules import analyze_goal
 from core.planner import generate_tasks
+from core.llm_reasoner import llm_reason, validate_llm_output
 from core.task_manager import (
     initialize_tasks,
     display_tasks,
@@ -38,7 +39,15 @@ def main():
         print(active_goal)
 
         # ---------- Intelligence ----------
-        advice = analyze_goal(active_goal)
+        llm_data = llm_reason(active_goal)
+
+        if validate_llm_output(llm_data):
+            advice = llm_data["advice"]
+            raw_tasks = [t["task"] for t in llm_data["tasks"]]
+        else:
+            advice = analyze_goal(active_goal)
+            raw_tasks = generate_tasks(active_goal)
+
         print("\n💡 Advice:")
         print(advice)
 

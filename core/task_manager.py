@@ -5,6 +5,7 @@ PRIORITY_ORDER = {
 }
 
 
+
 def initialize_tasks(task_list):
     tasks = []
     for task in task_list:
@@ -56,3 +57,6 @@ def execute_task(tasks, task):
             t['status']= "done"
             return  True
     return False
+
+def count_execution_tasks(tasks):
+    return sum(1 for t in tasks if t["status"]== "done")
