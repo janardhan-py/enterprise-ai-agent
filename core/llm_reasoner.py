@@ -13,13 +13,13 @@ Rules:
 """
 
 
-def build_context(name, goal, tasks):
-    vector_memory = VectorMemory()
+def build_context(name, goal, tasks,vector_memory):
 
     completed = [t["task"] for t in tasks if t["status"] == "done"]
     pending = [t["task"] for t in tasks if t["status"] == "todo"]
 
     related_memory = vector_memory.retrieve(goal, top_k=1)
+
 
     return {
         "user": name,

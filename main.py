@@ -1,4 +1,8 @@
 import logging
+logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+
 
 from core.logger import setup_logger
 from core.user_input import get_user_details, ask_user_choice
@@ -24,12 +28,12 @@ from core.vector_memory import VectorMemory
 MAX_EXECUTIONS_PER_RUN = 2
 
 
-def run_llm_pipeline(name, goal, tasks):
+def run_llm_pipeline(name, goal, tasks, vector_memory):
     """
     Handles LLM reasoning with validation and fallback.
     Keeps main() clean and readable.
     """
-    context = build_context(name, goal, tasks)
+    context = build_context(name, goal, tasks, vector_memory)
     llm_data = llm_reason(context)
 
     if validate_llm_output(llm_data):
@@ -123,7 +127,7 @@ def main():
         print("\n🎯 Current Goal:")
         print(goal)
 
-        advice, raw_tasks = run_llm_pipeline(name, goal, tasks)
+        advice, raw_tasks = run_llm_pipeline(name, goal, tasks, vector_memory)
 
         print("\n💡 Advice:")
         print(advice)
