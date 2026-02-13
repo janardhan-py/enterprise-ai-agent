@@ -5,7 +5,6 @@ from core.user_input import get_user_details, ask_user_choice
 from core.memory import load_memory, save_full_state, reset_memory
 from core.rules import analyze_goal
 from core.planner import generate_tasks
-from core.llm_reasoner import llm_reason, validate_llm_output
 from core.task_manager import (
     initialize_tasks,
     display_tasks,
@@ -14,143 +13,167 @@ from core.task_manager import (
     update_task_priority,
     execute_task,
 )
+from core.llm_reasoner import (
+    build_context,
+    llm_reason,
+    validate_llm_output,
+)
+from core.vector_memory import VectorMemory
 
 
 MAX_EXECUTIONS_PER_RUN = 2
+
+
+def run_llm_pipeline(name, goal, tasks):
+    """
+    Handles LLM reasoning with validation and fallback.
+    Keeps main() clean and readable.
+    """
+    context = build_context(name, goal, tasks)
+    llm_data = llm_reason(context)
+
+    if validate_llm_output(llm_data):
+        advice = llm_data["advice"]
+        raw_tasks = [t["task"] for t in llm_data["tasks"]]
+    else:
+        logging.warning("Invalid LLM output. Falling back to rule-based logic.")
+        advice = analyze_goal(goal)
+        raw_tasks = generate_tasks(goal)
+
+    return advice, raw_tasks
+
+
+def handle_task_updates(name, goal, tasks):
+    """
+    Handles priority updates, marking done, and execution logic.
+    """
+    display_tasks(tasks)
+
+    next_task = get_next_task(tasks)
+
+    if next_task:
+        print("\n➡️ Recommended Next Task:")
+        print(f"- {next_task['task']} (priority: {next_task['priority']})")
+    else:
+        print("\n🎉 All tasks are completed!")
+
+    # ---- Update Priority ----
+    priority_choice = input(
+        "\nEnter task number to change PRIORITY (or press Enter to skip): "
+    ).strip()
+
+    if priority_choice.isdigit():
+        task_index = int(priority_choice) - 1
+        new_priority = input(
+            "Set priority (high / medium / low): "
+        ).strip().lower()
+
+        update_task_priority(tasks, task_index, new_priority)
+        save_full_state(name, goal, tasks)
+        print("✅ Task priority updated")
+
+    # ---- Mark Done ----
+    done_choice = input(
+        "\nEnter task number to mark DONE (or press Enter to skip): "
+    ).strip()
+
+    if done_choice.isdigit():
+        mark_task_done(tasks, int(done_choice) - 1)
+        save_full_state(name, goal, tasks)
+        print("✅ Task marked as DONE")
+
+    # ---- Execution Guardrails ----
+    executed_count = sum(1 for t in tasks if t["status"] == "done")
+
+    if executed_count >= MAX_EXECUTIONS_PER_RUN:
+        print("\n🛑 Execution limit reached for this session.")
+        print("Restart the application to continue.")
+        return
+
+    execute_choice = input(
+        "\nExecute recommended task now? (y/n): "
+    ).strip().lower()
+
+    if execute_choice == "y" and next_task:
+        success = execute_task(tasks, next_task)
+
+        if success:
+            save_full_state(name, goal, tasks)
+            print("⚙️ Task executed and marked as DONE")
+        else:
+            print("❌ Failed to execute task")
 
 
 def main():
     setup_logger()
     logging.info("Application started")
 
+    vector_memory = VectorMemory()
     memory = load_memory()
 
-    # =========================
-    # CASE 1: Existing memory
-    # =========================
+    # ==================================================
+    # EXISTING USER
+    # ==================================================
     if memory:
         name = memory.get("name", "User")
-        active_goal = memory.get("goal", "")
+        goal = memory.get("goal", "")
         tasks = memory.get("tasks", [])
 
         print(f"\n👋 Welcome back, {name}")
+        print("\n🎯 Current Goal:")
+        print(goal)
 
-        print("\n📌 Current Goal:")
-        print(active_goal)
-
-        # ---------- Intelligence ----------
-        llm_data = llm_reason(active_goal)
-
-        if validate_llm_output(llm_data):
-            advice = llm_data["advice"]
-            raw_tasks = [t["task"] for t in llm_data["tasks"]]
-        else:
-            advice = analyze_goal(active_goal)
-            raw_tasks = generate_tasks(active_goal)
+        advice, raw_tasks = run_llm_pipeline(name, goal, tasks)
 
         print("\n💡 Advice:")
         print(advice)
 
-        # ---------- Task Planning ----------
         if not tasks:
-            raw_tasks = generate_tasks(active_goal)
             tasks = initialize_tasks(raw_tasks)
-            save_full_state(name, active_goal, tasks)
+            save_full_state(name, goal, tasks)
 
-        display_tasks(tasks)
+        handle_task_updates(name, goal, tasks)
 
-        # ---------- Agent Decision ----------
-        next_task = get_next_task(tasks)
-        if next_task:
-            print("\n➡️ Next Best Task:")
-            print(f"- {next_task['task']} (priority: {next_task['priority']})")
-        else:
-            print("\n🎉 All tasks are completed!")
-
-        # ---------- Update Task Priority ----------
-        priority_choice = input(
-            "\nEnter task number to change PRIORITY (or press Enter to skip): "
-        ).strip()
-
-        if priority_choice.isdigit():
-            task_index = int(priority_choice) - 1
-            new_priority = input(
-                "Set priority (high / medium / low): "
-            ).strip().lower()
-
-            update_task_priority(tasks, task_index, new_priority)
-            save_full_state(name, active_goal, tasks)
-            print("✅ Task priority updated")
-
-        # ---------- Mark Task Done ----------
-        done_choice = input(
-            "\nEnter task number to mark DONE (or press Enter to skip): "
-        ).strip()
-
-        if done_choice.isdigit():
-            mark_task_done(tasks, int(done_choice) - 1)
-            save_full_state(name, active_goal, tasks)
-            print("✅ Task marked as DONE")
-
-        # ---------- Execution Guardrails ----------
-        executed_count = sum(1 for t in tasks if t["status"] == "done")
-
-        if executed_count >= MAX_EXECUTIONS_PER_RUN:
-            print("\n🛑 Execution limit reached for this run.")
-            print("Restart the app to continue.")
-        else:
-            execute_choice = input(
-                "\nExecute next task now? (y/n): "
-            ).strip().lower()
-
-            if execute_choice == "y" and next_task:
-                success = execute_task(tasks, next_task)
-
-                if success:
-                    save_full_state(name, active_goal, tasks)
-                    print("⚙️ Task executed and marked as DONE")
-                else:
-                    print("❌ Failed to execute task")
-
-        # ---------- User Control ----------
+        # ---- User Control ----
         choice = ask_user_choice()
 
         if choice == "2":
-            print("\nUpdate your details:")
+            print("\nUpdate your goal:")
             new_name, new_goal = get_user_details()
-            raw_tasks = generate_tasks(new_goal)
+
+            advice, raw_tasks = run_llm_pipeline(new_name, new_goal, [])
             tasks = initialize_tasks(raw_tasks)
+
             save_full_state(new_name, new_goal, tasks)
-            logging.info("User updated name, goal, and tasks")
-            print("✅ Name, goal, and tasks updated")
+            vector_memory.store(new_goal)
+
+            print("✅ Goal updated successfully")
 
         elif choice == "3":
             reset_memory()
-            logging.info("User reset memory")
             print("🗑️ Memory reset successfully")
 
         else:
-            logging.info("User kept existing plan")
             print("➡️ Continuing with current plan")
 
-    # =========================
-    # CASE 2: First run
-    # =========================
+    # ==================================================
+    # FIRST RUN
+    # ==================================================
     else:
         logging.info("First run detected")
 
         name, goal = get_user_details()
-        raw_tasks = generate_tasks(goal)
+
+        advice, raw_tasks = run_llm_pipeline(name, goal, [])
         tasks = initialize_tasks(raw_tasks)
 
         save_full_state(name, goal, tasks)
+        vector_memory.store(goal)
 
         print(f"\n👋 Welcome, {name}")
-
-        print("\n📌 Your Goal:")
+        print("\n🎯 Your Goal:")
         print(goal)
 
-        advice = analyze_goal(goal)
         print("\n💡 Advice:")
         print(advice)
 
@@ -158,7 +181,7 @@ def main():
 
         next_task = get_next_task(tasks)
         if next_task:
-            print("\n➡️ Next Best Task:")
+            print("\n➡️ Recommended Next Task:")
             print(f"- {next_task['task']} (priority: {next_task['priority']})")
 
 
